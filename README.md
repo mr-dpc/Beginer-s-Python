@@ -1,2 +1,0 @@
-# Hotel Managment
-My python.
