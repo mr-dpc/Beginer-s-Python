@@ -52,7 +52,7 @@ class MainWindow(QtWidgets.QMainWindow):
         banner_label = QtWidgets.QLabel(self)
         banner_label.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
         banner_label.setStyleSheet("background-color: #3498db; color: #ffffff; padding: 10px;")
-        banner_label.setText("Stock and Sales Management System")  # You can also set an image using setPixmap()
+        banner_label.setText("Stock and Sales Manager")  # You can also set an image using setPixmap()
 
         # Set layout for the main widget
         self.layout = QtWidgets.QVBoxLayout(self.main_widget)

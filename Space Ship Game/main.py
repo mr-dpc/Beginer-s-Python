@@ -1,7 +1,6 @@
 import pygame
 import sys
-from tkinter import *
-from tkinter import messagebox
+import random
 
 # Initialize Pygame
 pygame.init()
@@ -12,98 +11,139 @@ FPS = 60
 
 # Colors
 WHITE = (255, 255, 255)
-BLACK = (0, 0, 0)
-RED = (255, 0, 0)
 
-# Create a Player class
-class Player(pygame.sprite.Sprite):
-    def __init__(self):
-        super().__init__()
-        self.image = pygame.image.load("D:/Wasir's Project/Space Ship Game/spaceship.png")
-        self.rect = self.image.get_rect()
-        self.rect.x = WIDTH // 2 - self.rect.width // 2
-        self.rect.y = HEIGHT - self.rect.height - 20
+# Load images (using relative paths)
+player_image = pygame.image.load("D:/Wasir's Project/Space Ship Game/spaceship.png")
+enemy_image = pygame.image.load("D:/Wasir's Project/Space Ship Game/enemy.png")
+villain_image = pygame.image.load("D:/Wasir's Project/Space Ship Game/renemy.png")
+bullet_image = pygame.image.load("D:/Wasir's Project/Space Ship Game/bullet.png")
 
-# Create the screen
-screen = pygame.display.set_mode((WIDTH, HEIGHT))
-pygame.display.set_caption("Spaceship Game")
-
-# Set initial player speed
+# Player spaceship
+player_size = 50
 player_speed = 5
+player_rect = player_image.get_rect()
+player_rect.center = (WIDTH // 2, HEIGHT - 2 * player_size)
 
-# Create a clock object to control the frame rate
+# Enemy spaceship
+enemy_size = 50
+enemy_speed = 3
+enemies = []
+
+# Villain spaceship
+villain_size = 100
+villain_speed = 2
+villain_rect = villain_image.get_rect()
+villain_rect.center = (WIDTH // 2, 50)
+
+# Bullet
+bullet_speed = 7
+bullets = []
+
+# Initialize screen
+screen = pygame.display.set_mode((WIDTH, HEIGHT))
+pygame.display.set_caption("3D Space Ship Game")
 clock = pygame.time.Clock()
 
-# Create a group for bullets and player
-bullets = pygame.sprite.Group()
-all_sprites = pygame.sprite.Group()
+# Function to handle events
+def handle_events():
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            pygame.quit()
+            sys.exit()
+        if event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_SPACE:
+                fire_bullet()
 
-# Create a player object
-player = Player()
-all_sprites.add(player)
+# Function to move the player
+def move_player():
+    keys = pygame.key.get_pressed()
+    if keys[pygame.K_LEFT] and player_rect.left - player_speed > 0:
+        player_rect.x -= player_speed
+    if keys[pygame.K_RIGHT] and player_rect.right + player_speed < WIDTH:
+        player_rect.x += player_speed
+    if keys[pygame.K_UP] and player_rect.top - player_speed > 0:
+        player_rect.y -= player_speed
+    if keys[pygame.K_DOWN] and player_rect.bottom + player_speed < HEIGHT:
+        player_rect.y += player_speed
 
-# Create a function to handle game over
+# Function to generate enemies
+def generate_enemies():
+    enemy_rect = enemy_image.get_rect()
+    for _ in range(5):  # Adjust the number of enemies as needed
+        enemy_rect.x = random.randint(0, WIDTH - enemy_size)
+        enemy_rect.y = random.randint(0, HEIGHT - enemy_size)
+        enemies.append(enemy_rect.copy())
+
+# Function to move enemies
+def move_enemies():
+    for enemy in enemies:
+        enemy.y += enemy_speed
+        if enemy.y > HEIGHT:
+            enemy.y = 0
+            enemy.x = random.randint(0, WIDTH - enemy_size)
+
+# Function to move the villain
+def move_villain():
+    global villain_speed
+    villain_rect.x += villain_speed
+    if villain_rect.left <= 0 or villain_rect.right >= WIDTH:
+        villain_speed = -villain_speed
+
+# Function to move bullets
+def move_bullets():
+    for bullet in bullets:
+        bullet.y -= bullet_speed
+        if bullet.y < 0:
+            bullets.remove(bullet)
+
+# Function to check collisions
+def check_collisions():
+    # Check collisions between player and enemies
+    for enemy in enemies:
+        if player_rect.colliderect(enemy):
+            game_over()
+
+    # Check collision between player and villain
+    if player_rect.colliderect(villain_rect):
+        you_win()
+
+# Function to handle game over
 def game_over():
-    messagebox.showinfo("Game Over", "Your spaceship was destroyed!")
+    print("Game Over!")
     pygame.quit()
     sys.exit()
 
+# Function to handle victory
+def you_win():
+    print("You Win!")
+    pygame.quit()
+    sys.exit()
+
+# Function to fire a bullet
+def fire_bullet():
+    bullet_rect = bullet_image.get_rect()
+    bullet_rect.center = player_rect.center
+    bullets.append(bullet_rect)
+
 # Main game loop
-def game_loop():
-    global player
+generate_enemies()  # Call the function to generate enemies at the start
 
-    while True:
-        # Event handling
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                pygame.quit()
-                sys.exit()
-            elif event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_SPACE:
-                    # Create a bullet and add it to the group
-                    bullet = pygame.Rect(player.rect.centerx - 2, player.rect.top - 10, 4, 10)
-                    bullets.add(bullet)
+while True:
+    handle_events()
+    move_player()
+    move_enemies()
+    move_villain()
+    move_bullets()
+    check_collisions()
 
-        # Move the player
-        keys = pygame.key.get_pressed()
-        if keys[pygame.K_LEFT] and player.rect.x > 0:
-            player.rect.x -= player_speed
-        if keys[pygame.K_RIGHT] and player.rect.x < WIDTH - player.rect.width:
-            player.rect.x += player_speed
+    # Draw everything
+    screen.fill(WHITE)
+    screen.blit(player_image, player_rect)
+    screen.blit(villain_image, villain_rect)
+    for enemy in enemies:
+        screen.blit(enemy_image, enemy)
+    for bullet in bullets:
+        screen.blit(bullet_image, bullet)
 
-        # Move the bullets
-        bullets.update()
-
-        # Remove bullets that go off-screen
-        for bullet in bullets.copy():
-            if bullet.bottom < 0:
-                bullets.remove(bullet)
-
-        # Check for collision with player and bullets
-        if pygame.sprite.spritecollide(player, bullets, True):
-            game_over()
-
-        # Draw everything
-        screen.fill(BLACK)
-        all_sprites.draw(screen)
-
-        # Draw bullets
-        for bullet in bullets:
-            pygame.draw.rect(screen, WHITE, bullet)
-
-        # Update the display
-        pygame.display.flip()
-
-        # Cap the frame rate
-        clock.tick(FPS)
-
-# Create a Tkinter window
-root = Tk()
-root.title("Spaceship Game")
-
-# Create a button to start the game
-start_button = Button(root, text="Start Game", command=game_loop)
-start_button.pack(pady=20)
-
-# Run the Tkinter main loop
-root.mainloop()
+    pygame.display.flip()
+    clock.tick(FPS)
